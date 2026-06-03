@@ -1,0 +1,34 @@
+*(Nota: Assim que você digita a barra `/`, o GitHub entende sozinho que precisa criar as pastas `.github` e `workflows`)*.
+
+2. No grande campo de texto abaixo, cole o código do nosso workflow:
+
+```yaml
+name: Compilar Aplicativo Android
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-android:
+    name: Build com Buildozer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Compilar com Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          workdir: .
+          buildozer_version: stable
+
+      - name: Baixar o arquivo gerado (Upload Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: aplicativo-android
+          path: ${{ steps.buildozer.outputs.filename }}
