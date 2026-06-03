@@ -24,18 +24,22 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Instalar Dependencias do Sistema
         run: |
           sudo apt update
           sudo apt install -y git zip unzip python3-pip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libssl-dev cmake libffi-dev libgomp1
           pip install --upgrade pip
-          pip install --upgrade buildozer cython virtualenv
+          pip install --upgrade "buildozer>=1.5.0" cython virtualenv
 
-      - name: Compilar com Buildozer
+      - name: Compilar com Buildozer usando SDK do Sistema
         run: |
+          export ANDROID_HOME=$ANDROID_HOME
+          export ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME
           buildozer android debug
+        env:
+          BUILDOZER_WARN_ON_ROOT: 0
 
       - name: Baixar o arquivo gerado (Upload Artifact)
         uses: actions/upload-artifact@v4
