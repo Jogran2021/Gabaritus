@@ -1,15 +1,10 @@
-*(Nota: Assim que você digita a barra `/`, o GitHub entende sozinho que precisa criar as pastas `.github` e `workflows`)*.
-
-2. No grande campo de texto abaixo, cole o código do nosso workflow:
-
-```yaml
 name: Compilar Aplicativo Android
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
 
 jobs:
   build-android:
@@ -17,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do código
+      - name: Checkout do codigo
         uses: actions/checkout@v4
 
       - name: Compilar com Buildozer
