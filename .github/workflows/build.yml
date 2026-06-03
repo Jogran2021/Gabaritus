@@ -33,10 +33,8 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade "buildozer>=1.5.0" cython virtualenv
 
-      - name: Compilar com Buildozer usando SDK do Sistema
+      - name: Compilar com Buildozer
         run: |
-          export ANDROID_HOME=$ANDROID_HOME
-          export ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME
           buildozer android debug
         env:
           BUILDOZER_WARN_ON_ROOT: 0
