@@ -35,7 +35,10 @@ jobs:
 
       - name: Compilar com Buildozer
         run: |
-          buildozer android debug
+          # Limita o uso de memória do Gradle para não estourar a RAM do GitHub Actions
+          export GRADLE_OPTS="-Xmx2048m -Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false"
+          # Roda com '-v' para manter o console ativo e vermos exatamente onde ele para
+          buildozer -v android debug
         env:
           BUILDOZER_WARN_ON_ROOT: 0
 
