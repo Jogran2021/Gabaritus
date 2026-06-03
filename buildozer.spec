@@ -1,4 +1,4 @@
-%%writefile /content/gabaritus_local/buildozer.spec
+
 [app]
 title = Gabaritus
 package.name = gabaritusapp
