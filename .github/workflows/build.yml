@@ -33,6 +33,17 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade "buildozer>=1.5.0" cython virtualenv
 
+      # NOVO: Salva e restaura os downloads do SDK/NDK e compilações anteriores para não estourar o tempo do GitHub
+      - name: Cache dos componentes do Buildozer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
       - name: Compilar com Buildozer
         run: |
           # Limita o uso de memória do Gradle para não estourar a RAM do GitHub Actions
