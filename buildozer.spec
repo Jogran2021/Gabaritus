@@ -8,9 +8,9 @@ source.include_exts = py,png,jpg,kv,atlas,ttf,txt,json,xlsx,csv,zip,db
 requirements = python3==3.11.1, kivy==2.3.0, kivymd==2.0.1dev0, fpdf, pillow, android
 orientation = portrait
 android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
-android.api = 33
+android.api = 34
 android.minapi = 24
-android.ndk = 25b
+android.ndk =
 android.archs = arm64-v8a
 version = 1.0.0
 version.release = 1
