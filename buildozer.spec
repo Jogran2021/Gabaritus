@@ -5,7 +5,7 @@ package.name = gabaritusapp
 package.domain = com.jocelio.gabaritus
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,ttf,txt,json,xlsx,csv,zip,db
-requirements = python3==3.11.9, kivy==2.3.0, kivymd==2.0.1dev0, fpdf, pillow, android
+requirements = python3, kivy==2.3.0, kivymd==2.0.1dev0, fpdf, pillow, android
 orientation = portrait
 android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
 android.api = 34
