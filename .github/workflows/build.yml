@@ -11,10 +11,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    # Executa todo o processo dentro do container oficial e isolado do Buildozer
+    # Executa o processo dentro do container isolado oficial do Kivy
     container:
       image: kivy/buildozer:latest
-      options: --user root
 
     steps:
     - name: Checkout code
@@ -32,13 +31,13 @@ jobs:
 
     - name: Build APK inside Container
       run: |
-        # Garante o alinhamento das ferramentas com o ecossistema interno estável do Docker
+        # Sincroniza as diretivas de API do Android com o ecossistema estável interno do Docker
         sed -i 's/^#\? \?android.api =.*/android.api = 33/' buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' buildozer.spec
         
-        # O container já tem as dependências de sistema e o Cython configurados. 
-        # Executa direto o empacotamento.
-        buildozer android debug
+        # Correção do EOFError: O comando 'warn_on_root=0' desarma a pergunta do terminal,
+        # permitindo que o build rode em modo root de forma 100% automatizada.
+        buildozer warn_on_root=0 android debug
       timeout-minutes: 60
 
     - name: Upload APK
