@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK via Docker
 
 on:
   push:
@@ -9,90 +9,37 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # Ambiente estável que evita travamentos em loops de receitas antigas
+    runs-on: ubuntu-latest
+    
+    # Executa todo o processo dentro do container oficial e isolado do Buildozer
+    container:
+      image: kivy/buildozer:latest
+      options: --user root
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
-    - name: Install system dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          git zip unzip \
-          openjdk-17-jdk \
-          autoconf libtool \
-          pkg-config zlib1g-dev \
-          libncurses5-dev libncursesw5-dev \
-          cmake \
-          libffi-dev libssl-dev \
-          wget
-
-    - name: Install Android SDK (Build Tools)
-      run: |
-        # FORÇA O TERMINAL A USAR O JAVA 17 (Resgata o erro UnsupportedClassVersionError)
-        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-        export PATH=$JAVA_HOME/bin:$PATH
-        
-        # 1. Criar a estrutura correta de diretórios para o SDK moderno
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
-        cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
-        
-        # 2. Baixar as ferramentas de linha de comando oficiais
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip commandlinetools-linux-11076708_latest.zip
-        rm commandlinetools-linux-11076708_latest.zip
-        
-        # 3. Mover para a pasta exigida 'latest' e entrar nela
-        mv cmdline-tools latest
-        cd latest/bin
-        
-        # 4. Aceitar as licenças do SDK
-        yes | ./sdkmanager --licenses
-        
-        # 5. Instalar build-tools, platform-tools e plataformas suportadas
-        ./sdkmanager "build-tools;33.0.2" "platform-tools" "platforms;android-33"
-        
-        # 6. ESTRUTURA PARA PREVENIR ERROS INTERNOS DO BUILDOZER:
-        mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
-        ln -s ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-        ln -s ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/avdmanager ~/.buildozer/android/platform/android-sdk/tools/bin/avdmanager
-        
-        echo "Android SDK e Build Tools instalados com sucesso!"
-
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install "buildozer>=1.5.0" cython
-
-    - name: Cache Buildozer
+    - name: Cache Buildozer packages
       uses: actions/cache@v4
       with:
-        path: ~/.buildozer
-        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        path: |
+          ~/.buildozer
+          .buildozer
+        key: ${{ runner.os }}-buildozer-docker-${{ hashFiles('buildozer.spec') }}
         restore-keys: |
-          ${{ runner.os }}-buildozer-
+          ${{ runner.os }}-buildozer-docker-
 
-    - name: Build APK
+    - name: Build APK inside Container
       run: |
-        # ALTERAÇÃO AUTOMÁTICA DIRETO NO SPECS ANTES DO DO BUILD
-        # Altera ou adiciona as linhas cruciais de API e versão do NDK para não haver conflito
+        # Garante o alinhamento das ferramentas com o ecossistema interno estável do Docker
         sed -i 's/^#\? \?android.api =.*/android.api = 33/' buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' buildozer.spec
         
-        # Executa a compilação do APK
+        # O container já tem as dependências de sistema e o Cython configurados. 
+        # Executa direto o empacotamento.
         buildozer android debug
       timeout-minutes: 60
-      env:
-        # Passa as variáveis globais para o Buildozer usar o Java 17 e o SDK isolado
-        JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-        ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
-        ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
