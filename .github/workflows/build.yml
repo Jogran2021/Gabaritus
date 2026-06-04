@@ -8,7 +8,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     
     - name: Install dependencies
       run: |
@@ -19,10 +19,19 @@ jobs:
         pip3 install --user buildozer cython
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     
+    - name: Cache Buildozer
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.buildozer
+          .buildozer
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+    
     - name: Build APK
-      run: |
-        # Só cria o spec se não existir
-        if [ ! -f buildozer.spec ]; then
-          buildozer init
-        fi
-        buildozer android debug
+      run: buildozer android debug deploy run
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: Gabaritus-APK
+        path: bin/*.apk
