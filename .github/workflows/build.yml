@@ -84,6 +84,12 @@ jobs:
         # Aponta o Buildozer de forma fixa para o SDK que configuramos acima
         ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
         ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+        
+        # CORREÇÃO CRUCIAL: Força o ambiente a usar estritamente o NDK do Buildozer,
+        # limpando as variáveis pré-configuradas do GitHub Actions que quebram o compilador C
+        ANDROID_NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk-r25b
+        ANDROID_NDK_ROOT: /home/runner/.buildozer/android/platform/android-ndk-r25b
+        ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk-r25b
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
