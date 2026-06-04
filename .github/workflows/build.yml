@@ -5,11 +5,11 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch: # Permite que você execute o build manualmente pelo GitHub
+  workflow_dispatch: # Permite rodar manualmente pelo GitHub
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # Usando uma versão estável e altamente compatível do Ubuntu
 
     steps:
     - name: Checkout code
@@ -24,10 +24,9 @@ jobs:
           ${{ runner.os }}-buildozer-
 
     - name: Build with Buildozer Action
-      uses: artemsbulgakov/buildozer-action@v1
+      uses: kivy/buildozer-action@v1.2.4 # Versão oficial e atualizada do Kivy
       with:
         command: buildozer android debug
-        buildozer_version: stable
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
