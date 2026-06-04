@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # Versão altamente estável para receitas Kivy
+    runs-on: ubuntu-22.04 # Mantém a versão estável
 
     steps:
     - name: Checkout code
@@ -31,8 +31,7 @@ jobs:
           libncurses5-dev libncursesw5-dev \
           cmake \
           libffi-dev libssl-dev \
-          wget \
-          expect # Instala o automatizador de respostas nativo do Linux
+          wget
 
     - name: Install Python dependencies
       run: |
@@ -47,25 +46,22 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildozer-
 
-    - name: Build APK com Resposta Automatica
+    - name: Build APK com Licenças Aceitas
       run: |
-        # Configura as propriedades direto no arquivo buildozer.spec antes de compilar
+        # 1. Ajusta o arquivo buildozer.spec antes de começar
         sed -i 's/^#\? \?android.api =.*/android.api = 33/' buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' buildozer.spec
         
-        # Garante que a pasta atual pertence ao usuário padrão 'runner'
-        sudo chown -R runner:runner .
+        # 2. CRUCIAL: Cria a pasta de licenças que o Android SDK exige e aceita todas as licenças
+        # Isso evita que o Buildozer pare para mostrar aqueles textos longos de exportação da Google
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        echo -e "\n2c4333f1a3b179752d77a32d542d16110f214d2e\n85766853833b0c35e10309735c065aed45053a40\ne9ac305950a7f5c5146beb6c34124d477921d9c9\n2ab3fcd278ab212449050d01447a62de3e97022d\n27e65a504e25384663784bd3853c99c50c87e56a\nf314b3fc041f46485c6077ec47ffed6a12c178c5" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
         
-        # SCRIPT EXPECT: Ele inicia o buildozer e fica vigiando o terminal. 
-        # Se o Buildozer perguntar do root, ele responde 'y'. Se não perguntar, segue normal.
-        expect -c '
-          set timeout -1
-          spawn buildozer android debug
-          expect {
-            "Are you sure you want to continue" { send "y\r"; exp_continue }
-            eof
-          }
-        '
+        # 3. Executa o buildozer desativando o aviso de root por variável interna aceita pelas versões de CI
+        export BUILDOZER_WARN_ON_ROOT=0
+        export APP_ANDROID_SDK=33
+        
+        buildozer android debug
       timeout-minutes: 60
 
     - name: Upload APK
