@@ -9,12 +9,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    # O 'latest' garante que o GitHub sempre use a versão mais atualizada e segura do Ubuntu
+    runs-on: ubuntu-latest
 
     steps:
+    # Puxa sempre a versão principal mais recente do checkout
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # O cache se adapta automaticamente baseado no arquivo do seu projeto
     - name: Get Buildozer Cache
       uses: actions/cache@v4
       with:
@@ -23,13 +26,26 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildozer-
 
+    # Puxa sempre o código direto da branch principal do Buildozer da Kivy
     - name: Build with Buildozer Action
-      uses: kivy/buildozer-action@v1.2.4
+      uses: kivy/buildozer-action@master
       with:
         command: buildozer android debug
 
+    # Envia o APK gerado usando a versão mais recente da ferramenta de upload
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: package
         path: bin/*.apk
+
+    # Cria a liberação de download na última versão disponível da ferramenta
+    - name: Create Automatic Release
+      uses: marooned/automatic-releases@latest
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        automatic_release_tag: "latest"
+        prerelease: false
+        title: "Gabaritus - Última Versão Compilada"
+        files: |
+          bin/*.apk
