@@ -35,22 +35,26 @@ jobs:
 
     - name: Install Android SDK (Build Tools)
       run: |
-        # Criar diretório do SDK
-        mkdir -p ~/.buildozer/android/platform/android-sdk
-        cd ~/.buildozer/android/platform/android-sdk
+        # Criar a estrutura correta de diretórios para o SDK
+        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+        cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
         
-        # Baixar command line tools
+        # Baixar as ferramentas de linha de comando oficiais
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         unzip commandlinetools-linux-11076708_latest.zip
         rm commandlinetools-linux-11076708_latest.zip
         
-        # Aceitar licenças automaticamente
-        yes | ./cmdline-tools/bin/sdkmanager --licenses > /dev/null 2>&1
+        # O Android SDK exige que as ferramentas fiquem dentro de uma pasta chamada 'latest'
+        mv cmdline-tools latest
+        cd latest/bin
         
-        # Instalar build-tools, platform-tools, e platform
-        ./cmdline-tools/bin/sdkmanager "build-tools;33.0.2" "platform-tools" "platforms;android-33" > /dev/null 2>&1
+        # Aceitar as licenças sem silenciar erros graves
+        yes | ./sdkmanager --licenses
         
-        echo "Android SDK installed successfully"
+        # Instalar as dependências necessárias de compilação
+        ./sdkmanager "build-tools;33.0.2" "platform-tools" "platforms;android-33"
+        
+        echo "Android SDK instalado com sucesso!"
 
     - name: Install Python dependencies
       run: |
@@ -58,7 +62,7 @@ jobs:
         pip install buildozer cython
 
     - name: Cache Buildozer
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.buildozer
         key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
@@ -66,10 +70,10 @@ jobs:
           ${{ runner.os }}-buildozer-
 
     - name: Build APK
-      run: buildozer android debug deploy
+      run: buildozer android debug
       timeout-minutes: 60
       env:
-        # Forçar o Buildozer a usar o SDK pré-instalado
+        # Aponta o Buildozer de forma fixa para o SDK que configuramos acima
         ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
         ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
