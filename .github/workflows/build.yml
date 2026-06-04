@@ -66,7 +66,7 @@ jobs:
           ${{ runner.os }}-buildozer-
 
     - name: Build APK
-      run: buildozer android debug deploy run
+      run: buildozer android debug deploy
       timeout-minutes: 60
       env:
         # Forçar o Buildozer a usar o SDK pré-instalado
