@@ -9,8 +9,8 @@ on:
 
 jobs:
   build:
-    # O 'latest' garante que o GitHub sempre use a versão mais atualizada e segura do Ubuntu
-    runs-on: ubuntu-latest
+    # Usando versão estável do Ubuntu para maior compatibilidade
+    runs-on: ubuntu-22.04
 
     steps:
     # Puxa sempre a versão principal mais recente do checkout
@@ -26,11 +26,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildozer-
 
-    # Puxa sempre o código direto da branch principal do Buildozer da Kivy
+    # ✅ CORRIGIDO: Usando a action que realmente funciona
     - name: Build with Buildozer Action
-      uses: kivy/buildozer-action@master
+      uses: ArtemSBulgakov/buildozer-action@v1
       with:
         command: buildozer android debug
+        # Opcional: forçar versão específica do Buildozer
+        # buildozer_version: stable
 
     # Envia o APK gerado usando a versão mais recente da ferramenta de upload
     - name: Upload APK Artifact
