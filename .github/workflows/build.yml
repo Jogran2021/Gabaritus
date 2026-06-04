@@ -15,7 +15,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Get Buildozer Cache
+    - name: Cache Buildozer
       uses: actions/cache@v4
       with:
         path: .buildozer
@@ -23,25 +23,20 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildozer-
 
-    - name: Build with Buildozer Action
-      uses: ArtemSBulgakov/buildozer-action@v1
-      with:
-        command: buildozer android debug
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+        pip3 install --user buildozer cython
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Upload APK Artifact
+    - name: Build APK
+      run: |
+        buildozer init
+        buildozer android debug
+
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: package
+        name: Gabaritus-APK
         path: bin/*.apk
-
-    # ✅ CORRIGIDO: Substituído por action que funciona
-    - name: Create Automatic Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: latest
-        name: "Gabaritus - Última Versão Compilada"
-        files: bin/*.apk
-        prerelease: false
-        generate_release_notes: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
