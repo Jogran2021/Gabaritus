@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # Versão estável que salvou o build dos loops
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout code
@@ -46,33 +46,41 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildozer-
 
-    - name: Build APK com Licenças Aceitas
+    - name: Build APK com Instalação Manual e Java 17
       run: |
-        # 1. Ajusta o arquivo buildozer.spec antes de começar
+        # 1. Configura as propriedades direto no arquivo buildozer.spec
         sed -i 's/^#\? \?android.api =.*/android.api = 33/' buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' buildozer.spec
         
-        # 2. RESOLVE O SDKMANAGER: Baixa as cmdline-tools oficiais da Google e injeta no caminho esperado
+        # 2. BLINDAGEM DO JAVA: Ativa o Java 17 antes de mexer no SDK da Google
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        export PATH=$JAVA_HOME/bin:$PATH
+        
+        # 3. INSTALAÇÃO MANUAL DO SDK: Baixa as cmdline-tools e mapeia para a pasta antiga
         mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
         cd ~/.buildozer/android/platform/android-sdk
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         unzip -q commandlinetools-linux-11076708_latest.zip
         rm commandlinetools-linux-11076708_latest.zip
         
-        # Faz o mapeamento linkando o executável moderno para a pasta antiga que o Buildozer exige
+        # Cria o link simbólico que o Buildozer precisa
         ln -s /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/bin/sdkmanager /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
         
-        # 3. Aceita previamente todas as licenças usando os hashes oficiais
+        # 4. Assina previamente as licenças para evitar o congelamento de tela
         mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
         echo -e "\n2c4333f1a3b179752d77a32d542d16110f214d2e\n85766853833b0c35e10309735c065aed45053a40\ne9ac305950a7f5c5146beb6c34124d477921d9c9\n2ab3fcd278ab212449050d01447a62de3e97022d\n27e65a504e25384663784bd3853c99c50c87e56a\nf314b3fc041f46485c6077ec47ffed6a12c178c5" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
         
-        # Volta para a pasta do projeto para rodar o build
+        # Volta para a pasta raiz do projeto Gabaritus para iniciar o build
         cd /home/runner/work/Gabaritus/Gabaritus
         
-        # 4. Executa o buildozer desativando o aviso de root e aplicando as variáveis globais
+        # 5. Limpa variáveis globais conflitantes do GitHub e ativa o modo não-interativo
         export BUILDOZER_WARN_ON_ROOT=0
         export APP_ANDROID_SDK=33
+        unset ANDROID_HOME
+        unset ANDROID_SDK_ROOT
+        unset ANDROID_NDK_HOME
         
+        # Roda o Buildozer com toda a estrutura montada e protegida
         buildozer android debug
       timeout-minutes: 60
 
