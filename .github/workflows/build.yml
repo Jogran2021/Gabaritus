@@ -1,42 +1,28 @@
-name: Build app with Buildozer
+name: Build APK
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Cache Buildozer
-      uses: actions/cache@v4
-      with:
-        path: .buildozer
-        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-        restore-keys: |
-          ${{ runner.os }}-buildozer-
-
+    
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip \
+          autoconf libtool pkg-config zlib1g-dev libncurses5-dev \
+          libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
         pip3 install --user buildozer cython
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-
+    
     - name: Build APK
       run: |
-        buildozer init
+        # Só cria o spec se não existir
+        if [ ! -f buildozer.spec ]; then
+          buildozer init
+        fi
         buildozer android debug
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: Gabaritus-APK
-        path: bin/*.apk
