@@ -61,10 +61,14 @@ jobs:
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         unzip -q commandlinetools-linux-11076708_latest.zip && rm commandlinetools-linux-11076708_latest.zip
         mv cmdline-tools latest && mkdir cmdline-tools && mv latest cmdline-tools/
-        ln -s /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/clean/latest/bin/sdkmanager /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
         
-        mkdir -p licenses
-        echo -e "\n2c4333f1a3b179752d77a32d542d16110f214d2e\n85766853833b0c35e10309735c065aed45053a40" > licenses/android-sdk-license
+        ln -s /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+        
+        # --- CORREÇÃO 1: ACEITE OFICIAL DE LICENÇAS ---
+        # Substitui o "echo" estático pelo comando oficial que aceita TODAS as licenças via terminal
+        yes | ./cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=/home/runner/.buildozer/android/platform/android-sdk
+        
+        # Agora o download das dependências vai passar direto
         ./cmdline-tools/latest/bin/sdkmanager --sdk_root=/home/runner/.buildozer/android/platform/android-sdk "build-tools;33.0.2" "platform-tools" "platforms;android-33"
         
         # ----------------------------------------------------
@@ -73,30 +77,27 @@ jobs:
         cd /home/runner/.buildozer/android/platform
         wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
         unzip -q android-ndk-r25b-linux.zip && rm android-ndk-r25b-linux.zip
-        # O Buildozer espera a pasta com o nome exatamente assim:
-        mv android-ndk-r25b android-ndk-r25b
+        
+        # --- CORREÇÃO 2: REMOÇÃO DO MV RECURSIVO ---
+        # Como o unzip já cria a pasta 'android-ndk-r25b', removemos a linha que tentava mover a pasta para dentro dela mesma.
         
         # ----------------------------------------------------
         # BLOCO C: Baixar e estruturar o Apache Ant manualmente
         # ----------------------------------------------------
         wget -q https://archive.apache.org/dist/ant/binaries/apache-ant-1.9.4-bin.tar.gz
         tar -xzf apache-ant-1.9.4-bin.tar.gz && rm apache-ant-1.9.4-bin.tar.gz
-        mv apache-ant-1.9.4 apache-ant-1.9.4
         
         # ----------------------------------------------------
         # DISPARO DO BUILD
         # ----------------------------------------------------
-        # Volta para a pasta raiz do seu projeto Gabaritus
         cd /home/runner/work/Gabaritus/Gabaritus
         
-        # Limpa o ambiente de travas e heranças do GitHub
         export BUILDOZER_WARN_ON_ROOT=0
         export APP_ANDROID_SDK=33
         unset ANDROID_HOME
         unset ANDROID_SDK_ROOT
         unset ANDROID_NDK_HOME
         
-        # Executa o Buildozer. Ele vai ver que TUDO já existe e vai direto pro abraço
         buildozer android debug
       timeout-minutes: 60
 
