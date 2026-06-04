@@ -1,60 +1,38 @@
-name: Compilar Aplicativo Android
+name: Build app with Buildozer
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main" ] # Altere para "master" se sua branch principal tiver esse nome
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
+  workflow_dispatch: # Permite que você execute o build manualmente pelo GitHub
 
 jobs:
-  build-android:
-    name: Build com Buildozer
-    runs-on: ubuntu-22.04
+  build:
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do codigo
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Configurar JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Get Buildozer Cache
+      uses: actions/cache@v4
+      with:
+        path: .buildozer
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+    - name: Build with Buildozer Action
+      uses: artemsbulgakov/buildozeraction@v1
+      with:
+        command: buildozer android debug
+        # Se você precisar aceitar licenças automaticamente, mantenha o True abaixo:
+        buildozer_version: stable
 
-      - name: Instalar Dependencias do Sistema
-        run: |
-          sudo apt update
-          sudo apt install -y git zip unzip python3-pip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libssl-dev cmake libffi-dev libgomp1
-          pip install --upgrade pip
-          pip install --upgrade "buildozer>=1.5.0" cython virtualenv
-
-      # NOVO: Salva e restaura os downloads do SDK/NDK e compilações anteriores para não estourar o tempo do GitHub
-      - name: Cache dos componentes do Buildozer
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.buildozer
-            .buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-buildozer-
-
-      - name: Compilar com Buildozer
-        run: |
-          # Limita o uso de memória do Gradle para não estourar a RAM do GitHub Actions
-          export GRADLE_OPTS="-Xmx4048m -Dorg.gradle.jvmargs=-Xmx4048m -Dorg.gradle.daemon=false"
-          # Roda com '-v' para manter o console ativo e vermos exatamente onde ele para
-          buildozer -v android debug
-        env:
-          BUILDOZER_WARN_ON_ROOT: 0
-
-      - name: Baixar o arquivo gerado (Upload Artifact)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Gabaritus-APK
-          path: bin/*.apk
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: package
+        # O Buildozer costuma salvar o APK gerado dentro da pasta 'bin'
+        path: bin/*.apk
