@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    # Executa o processo dentro do container isolado oficial do Kivy
+    # Roda dentro do container oficial isolado do Buildozer
     container:
       image: kivy/buildozer:latest
 
@@ -25,20 +25,22 @@ jobs:
         path: |
           ~/.buildozer
           .buildozer
-        key: ${{ runner.os }}-buildozer-docker-${{ hashFiles('buildozer.spec') }}
+        key: ${{ runner.os }}-buildozer-docker-env-${{ hashFiles('buildozer.spec') }}
         restore-keys: |
-          ${{ runner.os }}-buildozer-docker-
+          ${{ runner.os }}-buildozer-docker-env-
 
     - name: Build APK inside Container
       run: |
-        # Sincroniza as diretivas de API do Android com o ecossistema estável interno do Docker
+        # Sincroniza os parâmetros de API com as ferramentas internas estáveis do Docker
         sed -i 's/^#\? \?android.api =.*/android.api = 33/' buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' buildozer.spec
         
-        # Correção do EOFError: O comando 'warn_on_root=0' desarma a pergunta do terminal,
-        # permitindo que o build rode em modo root de forma 100% automatizada.
-        buildozer warn_on_root=0 android debug
+        # Executa o build direto
+        buildozer android debug
       timeout-minutes: 60
+      env:
+        # AQUI ESTÁ A ORDEM: Diz ao Buildozer para aceitar o modo root e nunca perguntar nada no terminal
+        BUILDOZER_WARN_ON_ROOT: "0"
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
