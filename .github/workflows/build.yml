@@ -63,12 +63,15 @@ jobs:
         unzip -q commandlinetools-linux-11076708_latest.zip
         rm commandlinetools-linux-11076708_latest.zip
         
-        # Cria o link simbólico que o Buildozer precisa
+        # Cria o link simbólico que o Buildozer precisa para achar o sdkmanager
         ln -s /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/bin/sdkmanager /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
         
         # 4. Assina previamente as licenças para evitar o congelamento de tela
         mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
         echo -e "\n2c4333f1a3b179752d77a32d542d16110f214d2e\n85766853833b0c35e10309735c065aed45053a40\ne9ac305950a7f5c5146beb6c34124d477921d9c9\n2ab3fcd278ab212449050d01447a62de3e97022d\n27e65a504e25384663784bd3853c99c50c87e56a\nf314b3fc041f46485c6077ec47ffed6a12c178c5" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        
+        # CORREÇÃO CRUCIAL: Usa o sdkmanager que acabamos de lincar para baixar as build-tools (onde fica o aidl) e as platforms
+        ./tools/bin/sdkmanager --sdk_root=/home/runner/.buildozer/android/platform/android-sdk "build-tools;33.0.2" "platform-tools" "platforms;android-33"
         
         # Volta para a pasta raiz do projeto Gabaritus para iniciar o build
         cd /home/runner/work/Gabaritus/Gabaritus
@@ -80,7 +83,7 @@ jobs:
         unset ANDROID_SDK_ROOT
         unset ANDROID_NDK_HOME
         
-        # Roda o Buildozer com toda a estrutura montada e protegida
+        # Roda o Buildozer com toda a estrutura montada, protegida e com o 'aidl' instalado
         buildozer android debug
       timeout-minutes: 60
 
