@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # Mantém a versão estável
+    runs-on: ubuntu-22.04 # Versão estável que salvou o build dos loops
 
     steps:
     - name: Checkout code
@@ -52,12 +52,24 @@ jobs:
         sed -i 's/^#\? \?android.api =.*/android.api = 33/' buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' buildozer.spec
         
-        # 2. CRUCIAL: Cria a pasta de licenças que o Android SDK exige e aceita todas as licenças
-        # Isso evita que o Buildozer pare para mostrar aqueles textos longos de exportação da Google
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-        echo -e "\n2c4333f1a3b179752d77a32d542d16110f214d2e\n85766853833b0c35e10309735c065aed45053a40\ne9ac305950a7f5c5146beb6c34124d477921d9c9\n2ab3fcd278ab212449050d01447a62de3e97022d\n27e65a504e25384663784bd3853c99c50c87e56a\nf314b3fc041f46485c6077ec47ffed6a12c178c5" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        # 2. RESOLVE O SDKMANAGER: Baixa as cmdline-tools oficiais da Google e injeta no caminho esperado
+        mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+        cd ~/.buildozer/android/platform/android-sdk
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip -q commandlinetools-linux-11076708_latest.zip
+        rm commandlinetools-linux-11076708_latest.zip
         
-        # 3. Executa o buildozer desativando o aviso de root por variável interna aceita pelas versões de CI
+        # Faz o mapeamento linkando o executável moderno para a pasta antiga que o Buildozer exige
+        ln -s /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/bin/sdkmanager /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+        
+        # 3. Aceita previamente todas as licenças usando os hashes oficiais
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
+        echo -e "\n2c4333f1a3b179752d77a32d542d16110f214d2e\n85766853833b0c35e10309735c065aed45053a40\ne9ac305950a7f5c5146beb6c34124d477921d9c9\n2ab3fcd278ab212449050d01447a62de3e97022d\n27e65a504e25384663784bd3853c99c50c87e56a\nf314b3fc041f46485c6077ec47ffed6a12c178c5" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        
+        # Volta para a pasta do projeto para rodar o build
+        cd /home/runner/work/Gabaritus/Gabaritus
+        
+        # 4. Executa o buildozer desativando o aviso de root e aplicando as variáveis globais
         export BUILDOZER_WARN_ON_ROOT=0
         export APP_ANDROID_SDK=33
         
