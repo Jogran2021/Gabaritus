@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Permite executar manualmente
+  workflow_dispatch:
 
 jobs:
   build:
@@ -30,14 +30,33 @@ jobs:
           pkg-config zlib1g-dev \
           libncurses5-dev libncursesw5-dev \
           cmake \
-          libffi-dev libssl-dev
+          libffi-dev libssl-dev \
+          wget
+
+    - name: Install Android SDK (Build Tools)
+      run: |
+        # Criar diretório do SDK
+        mkdir -p ~/.buildozer/android/platform/android-sdk
+        cd ~/.buildozer/android/platform/android-sdk
+        
+        # Baixar command line tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip commandlinetools-linux-11076708_latest.zip
+        rm commandlinetools-linux-11076708_latest.zip
+        
+        # Aceitar licenças automaticamente
+        yes | ./cmdline-tools/bin/sdkmanager --licenses > /dev/null 2>&1
+        
+        # Instalar build-tools, platform-tools, e platform
+        ./cmdline-tools/bin/sdkmanager "build-tools;33.0.2" "platform-tools" "platforms;android-33" > /dev/null 2>&1
+        
+        echo "Android SDK installed successfully"
 
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install buildozer cython
 
-    # 🔥 É AQUI QUE O CACHE É ATIVADO! 🔥
     - name: Cache Buildozer
       uses: actions/cache@v3
       with:
@@ -48,7 +67,11 @@ jobs:
 
     - name: Build APK
       run: buildozer android debug deploy run
-      timeout-minutes: 60  # Opcional: aumenta timeout para 1 hora
+      timeout-minutes: 60
+      env:
+        # Forçar o Buildozer a usar o SDK pré-instalado
+        ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+        ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
