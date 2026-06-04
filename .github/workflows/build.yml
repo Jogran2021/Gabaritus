@@ -2,7 +2,7 @@ name: Build app with Buildozer
 
 on:
   push:
-    branches: [ "main" ] # Altere para "master" se sua branch principal tiver esse nome
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch: # Permite que você execute o build manualmente pelo GitHub
@@ -24,15 +24,13 @@ jobs:
           ${{ runner.os }}-buildozer-
 
     - name: Build with Buildozer Action
-      uses: artemsbulgakov/buildozeraction@v1
+      uses: artemsbulgakov/buildozer-action@v1
       with:
         command: buildozer android debug
-        # Se você precisar aceitar licenças automaticamente, mantenha o True abaixo:
         buildozer_version: stable
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: package
-        # O Buildozer costuma salvar o APK gerado dentro da pasta 'bin'
         path: bin/*.apk
