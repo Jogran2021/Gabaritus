@@ -1,4 +1,4 @@
-name: Build APK via Docker
+name: Build APK via Usuario Isolado
 
 on:
   push:
@@ -9,38 +9,52 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    
-    # Roda dentro do container oficial isolado do Buildozer
-    container:
-      image: kivy/buildozer:latest
+    runs-on: ubuntu-22.04 # Versão estável que não quebra as receitas em C (Pillow, fpdf2)
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Cache Buildozer packages
-      uses: actions/cache@v4
+    - name: Setup Python
+      uses: actions/setup-python@v5
       with:
-        path: |
-          ~/.buildozer
-          .buildozer
-        key: ${{ runner.os }}-buildozer-docker-env-${{ hashFiles('buildozer.spec') }}
-        restore-keys: |
-          ${{ runner.os }}-buildozer-docker-env-
+        python-version: '3.11'
 
-    - name: Build APK inside Container
+    - name: Install system dependencies
       run: |
-        # Sincroniza os parâmetros de API com as ferramentas internas estáveis do Docker
+        sudo apt update
+        sudo apt install -y \
+          git zip unzip \
+          openjdk-17-jdk \
+          autoconf libtool \
+          pkg-config zlib1g-dev \
+          libncurses5-dev libncursesw5-dev \
+          cmake \
+          libffi-dev libssl-dev \
+          wget
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install "buildozer>=1.5.0" cython
+
+    - name: Build APK como Usuario Nao-Root
+      run: |
+        # 1. Configura as diretivas de API necessárias no buildozer.spec
         sed -i 's/^#\? \?android.api =.*/android.api = 33/' buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' buildozer.spec
         
-        # Executa o build direto
-        buildozer android debug
+        # 2. Cria um usuário comum no Linux chamado 'builder' para desarmar a trava de root
+        sudo useradd -m builder
+        
+        # 3. Transfere a propriedade da pasta do projeto para o novo usuário
+        sudo chown -R builder:builder .
+        
+        # 4. Executa o Buildozer usando o ambiente isolado do usuário 'builder'
+        # O comando 'sudo -u builder' muda a identidade do terminal. O Buildozer detecta
+        # que não é root, ignora o input() e segue com a compilação automática.
+        sudo -u builder env "PATH=$PATH" buildozer android debug
       timeout-minutes: 60
-      env:
-        # AQUI ESTÁ A ORDEM: Diz ao Buildozer para aceitar o modo root e nunca perguntar nada no terminal
-        BUILDOZER_WARN_ON_ROOT: "0"
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
