@@ -9,15 +9,12 @@ on:
 
 jobs:
   build:
-    # Usando versão estável do Ubuntu para maior compatibilidade
     runs-on: ubuntu-22.04
 
     steps:
-    # Puxa sempre a versão principal mais recente do checkout
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # O cache se adapta automaticamente baseado no arquivo do seu projeto
     - name: Get Buildozer Cache
       uses: actions/cache@v4
       with:
@@ -26,28 +23,25 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildozer-
 
-    # ✅ CORRIGIDO: Usando a action que realmente funciona
     - name: Build with Buildozer Action
       uses: ArtemSBulgakov/buildozer-action@v1
       with:
         command: buildozer android debug
-        # Opcional: forçar versão específica do Buildozer
-        # buildozer_version: stable
 
-    # Envia o APK gerado usando a versão mais recente da ferramenta de upload
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: package
         path: bin/*.apk
 
-    # Cria a liberação de download na última versão disponível da ferramenta
+    # ✅ CORRIGIDO: Substituído por action que funciona
     - name: Create Automatic Release
-      uses: marooned/automatic-releases@latest
+      uses: softprops/action-gh-release@v1
       with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        automatic_release_tag: "latest"
+        tag_name: latest
+        name: "Gabaritus - Última Versão Compilada"
+        files: bin/*.apk
         prerelease: false
-        title: "Gabaritus - Última Versão Compilada"
-        files: |
-          bin/*.apk
+        generate_release_notes: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
