@@ -9,8 +9,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    
+    runs-on: ubuntu-22.04 # Mudamos para o Ubuntu 22.04 por ser infinitamente mais estável para o Buildozer
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -33,41 +33,10 @@ jobs:
           libffi-dev libssl-dev \
           wget
 
-    - name: Install Android SDK (Build Tools)
-      run: |
-        # 1. Criar a estrutura correta de diretórios para o SDK moderno
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
-        cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
-        
-        # 2. Baixar as ferramentas de linha de comando oficiais
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip commandlinetools-linux-11076708_latest.zip
-        rm commandlinetools-linux-11076708_latest.zip
-        
-        # 3. Mover para a pasta exigida 'latest' e entrar nela
-        mv cmdline-tools latest
-        cd latest/bin
-        
-        # 4. Aceitar as licenças do SDK
-        yes | ./sdkmanager --licenses
-        
-        # 5. Instalar as build-tools e platforms exigidas
-        ./sdkmanager "build-tools;33.0.2" "platform-tools" "platforms;android-33"
-        
-        # 6. ENGENHARIA REVERSA PARA O BUILDOZER:
-        # Criamos a pasta antiga 'tools/bin' que o Buildozer procura internamente
-        mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
-        
-        # Criamos links simbólicos mapeando o caminho antigo para os binários modernos instalados
-        ln -s ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-        ln -s ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/avdmanager ~/.buildozer/android/platform/android-sdk/tools/bin/avdmanager
-        
-        echo "Android SDK instalado e configurado para o Buildozer com sucesso!"
-
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install buildozer cython
+        pip install "buildozer>=1.5.0" cython
 
     - name: Cache Buildozer
       uses: actions/cache@v4
@@ -78,18 +47,14 @@ jobs:
           ${{ runner.os }}-buildozer-
 
     - name: Build APK
-      run: buildozer android debug
-      timeout-minutes: 60
-      env:
-        # Aponta o Buildozer de forma fixa para o SDK que configuramos acima
-        ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
-        ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+      run: |
+        # Garante que o spec use versões modernas e compatíveis nativamente
+        sed -i 's/^#\? \?android.api =.*/android.api = 33/' buildozer.spec
+        sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' buildozer.spec
         
-        # CORREÇÃO CRUCIAL: Força o ambiente a usar estritamente o NDK do Buildozer,
-        # limpando as variáveis pré-configuradas do GitHub Actions que quebram o compilador C
-        ANDROID_NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk-r25b
-        ANDROID_NDK_ROOT: /home/runner/.buildozer/android/platform/android-ndk-r25b
-        ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk-r25b
+        # Executa o build limpo
+        buildozer android debug
+      timeout-minutes: 60
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
